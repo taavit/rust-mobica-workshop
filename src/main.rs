@@ -23,11 +23,19 @@ fn main() -> ! {
     let mut led = gpioa.pa5.into_push_pull_output();
 
     loop {
-        led.set_high();
-        debug!("Set high");
-        delay.delay_ms(250);
-        led.set_low();
-        debug!("Set low");
-        delay.delay_ms(250);
+        let signal = read_signal();
+        blink_signal(signal);
     }
+}
+
+enum Signal {
+
+}
+
+fn blink_signal(signal: Signal) {
+    unimplemented!();
+}
+
+fn read_signal() -> Signal {
+    unimplemented!();
 }
