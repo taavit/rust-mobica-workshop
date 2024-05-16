@@ -12,8 +12,12 @@ use panic_probe as _;
 
 use defmt_rtt as _;
 use stm32f4xx_hal::{
+    adc::{
+        config::{AdcConfig, SampleTime},
+        Adc,
+    },
     gpio::GpioExt,
-    pac,
+    pac::{self, ADC1},
     prelude::*,
     rcc::RccExt,
     timer::{Counter, SysTimerExt},
@@ -35,8 +39,12 @@ fn main() -> ! {
     let mut led = gpioa.pa5.into_push_pull_output();
     let mut button = gpioc.pc13.into_pull_down_input();
 
+    let mut adc: Adc<ADC1> = Adc::adc1(dp.ADC1, false, AdcConfig::default());
+    let analog_pin = gpioa.pa0.into_analog();
+
     loop {
-        let signal = read_signal(&mut button, &mut timer);
+        // let signal = read_signal(&mut button, &mut timer);
+        let signal = generate_signal(&mut adc, &analog_pin);
         blink_signal(&mut led, &mut delay, signal);
     }
 }
@@ -71,5 +79,14 @@ fn read_signal<Button: InputPin>(
         Signal::Short
     } else {
         Signal::Long
+    }
+}
+type AnalogPin = stm32f4xx_hal::gpio::Pin<'A', 0, stm32f4xx_hal::gpio::Analog>;
+
+fn generate_signal(adc: &mut Adc<ADC1>, pin: &AnalogPin) -> Signal {
+    if adc.convert(pin, SampleTime::Cycles_3) % 2 == 0 {
+        Signal::Long
+    } else {
+        Signal::Short
     }
 }
