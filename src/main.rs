@@ -2,12 +2,14 @@
 #![no_main]
 
 use cortex_m_rt::entry;
-use defmt::debug;
+use defmt::{debug, info};
 use embedded_hal::{
     delay::DelayNs,
     digital::{InputPin, OutputPin},
 };
+use f4_guess::MemoryGame;
 use fugit::Duration;
+use game::{Game, GameResult};
 use panic_probe as _;
 
 use defmt_rtt as _;
@@ -22,6 +24,9 @@ use stm32f4xx_hal::{
     rcc::RccExt,
     timer::{Counter, SysTimerExt},
 };
+
+mod f4_guess;
+mod game;
 
 #[entry]
 fn main() -> ! {
@@ -43,9 +48,19 @@ fn main() -> ! {
     let analog_pin = gpioa.pa0.into_analog();
 
     loop {
-        // let signal = read_signal(&mut button, &mut timer);
-        let signal = generate_signal(&mut adc, &analog_pin);
-        blink_signal(&mut led, &mut delay, signal);
+        let mut game = MemoryGame::new();
+        loop {
+            match game.play() {
+                GameResult::Correct => {
+                    let level = game.advance();
+                    info!("Correct! Next level: {}", level);
+                }
+                GameResult::Incorrect => {
+                    info!("Incorrect! Starting new game.");
+                    game.new_game();
+                }
+            }
+        }
     }
 }
 
